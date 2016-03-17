@@ -1,0 +1,82 @@
+:- ['gologinterpreter.swi'].
+
+:- discontiguous(block/2).
+:- discontiguous(on/3).
+:- discontiguous(clear/2).
+
+/* auxiliary definition */
+
+restoreSitArg(block(X),S,block(X,S)).
+restoreSitArg(on(X,Y),S,on(X,Y,S)).
+restoreSitArg(clear(X),S,clear(X,S)).
+restoreSitArg(goal,S,goal(S)).
+
+primitive_action(moveOffTable(_,_)).
+primitive_action(moveToTable(_)).
+
+/* sample goal predicate */
+
+goal(S) :- on(a,b,S), on(b,c,S), on(c,d,S), on(d,e,S).
+
+/* sample initial state */
+
+block(a,s0).
+block(b,s0).
+block(c,s0).
+block(d,s0).
+block(e,s0).
+on(d,c,s0).
+on(c,a,s0).
+clear(b,s0).
+clear(d,s0).
+clear(e,s0).
+
+table(a,s0).
+table(b,s0).
+table(e,s0).
+
+
+/* Precondition Axioms */
+
+poss(moveToTable(X),S) :- block(X,S), clear(X,S).
+poss(moveOffTable(X,Y),S) :- block(X,S), block(Y,S), not X = Y, table(X,S), clear(X), clear(Y).
+
+
+/* Successor State Axioms */
+
+on(X,Y,do(A,S)) :- A = moveOffTable(X,Y) ;
+                   on(X,Y,S), not A = moveToTable(X), not A = moveOffTable(X,Z).
+
+clear(X,do(A,S)) :- (A = moveOffTable(Y,Z) ; A = moveToTable(Y)), on(Y,X,S) ;
+                    clear(X,S), not A = moveOffTable(Y,X).
+
+block(X,do(A,S)) :- block(X,S).
+
+table(X,do(A,S)) :- A = moveToTable(X) ;
+                      table(X,S), not A = moveOffTable(X,Y).
+
+
+/* GOLOG Procedures */
+
+
+proc(flatten,
+	while(Some(x,block(x) & neg table(x)),
+				pi(x, moveToTable(x))).
+
+proc(solve, 
+    flatten: 
+    while(-goal,   
+       some(x, block(x)),
+       some(y, block(y)),
+       pi(x,pi(y,moveOffTable(x,y)))
+)).
+
+
+
+
+
+
+
+
+
+
